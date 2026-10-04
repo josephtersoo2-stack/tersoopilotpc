@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+release/
+*.tsbuildinfo
+
+# Turbo cache
+.turbo/
+
+# Environment and logs
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Databases and data dirs
+*.db
+*.db-wal
+*.db-shm
+tersoopilot/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+scratch/
+scratch-check.ts
+artifacts/
+**/artifacts/
+
+# Generated voice runtime assets (populated by scripts/download-wakeword-assets.mjs)
+apps/renderer/public/openwakeword/ort/
+apps/renderer/public/openwakeword/models/

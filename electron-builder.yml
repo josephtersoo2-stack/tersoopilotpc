@@ -1,0 +1,68 @@
+appId: com.tersoopilot.desktop
+productName: TersooPilot Desktop
+copyright: Copyright © 2026 TersooPilot Team
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - apps/desktop/dist/**/*
+  - migrations/**/*
+  - package.json
+  - node_modules/**/*
+  - "!node_modules/*-electron/**/*"
+  - "!**/*.ts"
+  - "!**/*.map"
+
+asar: true
+asarUnpack:
+  - "**/node_modules/better-sqlite3/**/*"
+  - "**/node_modules/keytar/**/*"
+  - "**/node_modules/playwright-core/**/*"
+
+extraResources:
+  - from: migrations
+    to: migrations
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: apps/renderer/public/favicon.ico
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: TersooPilot Desktop
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+
+publish:
+  provider: github
+  owner: tersoopilot
+  repo: tersoopilot-desktop
+  releaseType: release

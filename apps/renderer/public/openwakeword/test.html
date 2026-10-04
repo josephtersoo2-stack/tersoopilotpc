@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>openWakeWord Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    button { padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; border: none; background: #6366f1; color: white; cursor: pointer; }
+    button:hover { background: #4f46e5; }
+    #status { margin-top: 20px; font-size: 18px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <h1>openWakeWord Smoke Test</h1>
+  <button id="start">Start Listening</button>
+  <p id="status">Idle</p>
+
+  <script type="module">
+    import { OpenWakeWord, configureOrt } from '/node_modules/openwakeword-web/src/openwakeword.js';
+    import { Microphone } from '/node_modules/openwakeword-web/src/microphone.js';
+
+    document.getElementById('start').addEventListener('click', async () => {
+      const status = document.getElementById('status');
+      try {
+        status.textContent = 'Initializing ONNX runtime...';
+        configureOrt({ numThreads: 1, wasmPaths: '/openwakeword/ort/' });
+
+        status.textContent = 'Loading wake word model...';
+        const oww = await OpenWakeWord.create({
+          baseUrl: '/openwakeword/models/',
+          wakewordModels: ['hey_tersoo'],
+          threshold: 0.5,
+          onDetection: ({ label, score }) => {
+            status.textContent = `Detected: ${label} (${score.toFixed(2)})`;
+          },
+        });
+
+        status.textContent = 'Starting microphone...';
+        const mic = new Microphone(async (frame) => {
+          await oww.predict(frame);
+        }, { workletUrl: '/openwakeword/mic-worklet.js' });
+
+        await mic.start();
+        status.textContent = 'Listening for "Hey Tersoo" (or "Hey Jarvis")...';
+      } catch (err) {
+        status.textContent = 'Error: ' + err.message;
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
