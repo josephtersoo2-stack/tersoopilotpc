@@ -52,17 +52,20 @@ export function runMigrations(db: Database, migrationsDir: string) {
 
   for (const file of files) {
     const version = Number(file.slice(0, 4));
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-    const checksum = crypto.createHash('sha256').update(sql).digest('hex');
+    const rawSql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+    const rawChecksum = crypto.createHash('sha256').update(rawSql).digest('hex');
+    const normalizedSql = rawSql.replace(/\r\n/g, '\n');
+    const normalizedChecksum = crypto.createHash('sha256').update(normalizedSql).digest('hex');
 
     if (applied.has(version)) {
-      if (applied.get(version)!.checksum === checksum) {
+      const recorded = applied.get(version)!.checksum;
+      if (recorded === normalizedChecksum || recorded === rawChecksum) {
         continue;
       }
 
       if (repair) {
-        db.prepare('UPDATE migrations SET checksum = ? WHERE version = ?').run(checksum, version);
-        applied.set(version, { checksum });
+        db.prepare('UPDATE migrations SET checksum = ? WHERE version = ?').run(normalizedChecksum, version);
+        applied.set(version, { checksum: normalizedChecksum });
         repaired.push(version);
         continue;
       }
@@ -75,16 +78,16 @@ export function runMigrations(db: Database, migrationsDir: string) {
           `already correct, re-run with ${MIGRATION_REPAIR_ENV}=1 to re-record the ` +
           `checksum. Otherwise restore the original file, or add a new numbered ` +
           `migration instead of editing an applied one.`,
-        { version, file, expected: applied.get(version)!.checksum, actual: checksum },
+        { version, file, expected: recorded, actual: normalizedChecksum },
       );
     }
 
     const tx = db.transaction(() => {
-      db.exec(sql);
+      db.exec(rawSql);
       db.prepare('INSERT INTO migrations (version, applied_at, checksum) VALUES (?, ?, ?)').run(
         version,
         Date.now(),
-        checksum,
+        normalizedChecksum,
       );
       db.pragma(`user_version = ${version}`);
     });
